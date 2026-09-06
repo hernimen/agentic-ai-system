@@ -32,10 +32,14 @@ def evaluate_case(case: EvaluationCase) -> dict[str, Any]:
     normalized_expected = _normalize(case.expected_answer)
 
     answer_matches = normalized_answer == normalized_expected
-    retrieval_hit = bool(case.retrieved_sources) and _source_coverage(
-        case.expected_sources,
-        case.retrieved_sources,
-    ) >= 0.5
+    retrieval_hit = (
+        bool(case.retrieved_sources)
+        and _source_coverage(
+            case.expected_sources,
+            case.retrieved_sources,
+        )
+        >= 0.5
+    )
     source_coverage = _source_coverage(case.expected_sources, case.retrieved_sources)
 
     grounded = answer_matches and retrieval_hit
@@ -71,9 +75,7 @@ def run_benchmark_suite(cases: list[EvaluationCase]) -> dict[str, Any]:
         "grounded_rate": (grounded / total_cases) if total_cases else 0.0,
         "retrieval_hit_count": retrieval_hit,
         "retrieval_hit_rate": (retrieval_hit / total_cases) if total_cases else 0.0,
-        "avg_source_coverage": (
-            sum(source_coverage_values) / total_cases if total_cases else 0.0
-        ),
+        "avg_source_coverage": (sum(source_coverage_values) / total_cases if total_cases else 0.0),
     }
 
     return {

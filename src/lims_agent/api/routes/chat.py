@@ -8,6 +8,7 @@ from lims_agent.tools.sops import extract_sop_citations
 
 router = APIRouter(prefix="/api/v1", tags=["chat"])
 
+
 def _extract_citations(messages: list) -> list[dict]:
     citations = []
     seen = set()
