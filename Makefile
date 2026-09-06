@@ -1,6 +1,6 @@
 PORT ?= 8000
 
-.PHONY: help dev ingest install test lint typecheck lock compose-up compose-down compose-logs compose-build compose-restart
+.PHONY: help dev ingest install test lint typecheck lock compose-up compose-down compose-logs compose-build compose-restart benchmark
 
 help:
 	@echo "Targets:"
@@ -28,6 +28,9 @@ dev:
 
 test:
 	uv run pytest
+
+benchmark:
+	uv run python -c "from lims_agent.eval.dataset import build_default_benchmark_cases; from lims_agent.eval.benchmark import check_benchmark_thresholds; check_benchmark_thresholds(build_default_benchmark_cases(), min_pass_rate=0.8, min_grounded_rate=0.8, min_retrieval_hit_rate=0.8)"
 
 lint:
 	uv run ruff check src tests

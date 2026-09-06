@@ -83,6 +83,38 @@ def run_benchmark_suite(cases: list[EvaluationCase]) -> dict[str, Any]:
     }
 
 
+def check_benchmark_thresholds(
+    cases: list[EvaluationCase],
+    *,
+    min_pass_rate: float = 0.8,
+    min_grounded_rate: float = 0.8,
+    min_retrieval_hit_rate: float = 0.8,
+) -> dict[str, Any]:
+    """Raise if the benchmark falls below the required RAG-quality thresholds."""
+    report = run_benchmark_suite(cases)
+    summary = report["summary"]
+
+    failures = []
+    if summary["pass_rate"] < min_pass_rate:
+        failures.append(
+            f"pass_rate={summary['pass_rate']:.2f} is below required {min_pass_rate:.2f}"
+        )
+    if summary["grounded_rate"] < min_grounded_rate:
+        failures.append(
+            f"grounded_rate={summary['grounded_rate']:.2f} is below required {min_grounded_rate:.2f}"
+        )
+    if summary["retrieval_hit_rate"] < min_retrieval_hit_rate:
+        failures.append(
+            "retrieval_hit_rate="
+            f"{summary['retrieval_hit_rate']:.2f} is below required {min_retrieval_hit_rate:.2f}"
+        )
+
+    if failures:
+        raise ValueError("Benchmark quality gate failed: " + "; ".join(failures))
+
+    return report
+
+
 def run_ragas_benchmark(cases: list[EvaluationCase]) -> list[dict[str, Any]]:
     """Use the standard RAG evaluation stack when available.
 

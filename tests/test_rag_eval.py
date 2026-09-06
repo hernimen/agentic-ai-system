@@ -1,6 +1,11 @@
 from langchain_core.documents import Document
 
-from lims_agent.eval.benchmark import EvaluationCase, evaluate_case, run_benchmark_suite
+from lims_agent.eval.benchmark import (
+    EvaluationCase,
+    check_benchmark_thresholds,
+    evaluate_case,
+    run_benchmark_suite,
+)
 from lims_agent.eval.dataset import build_default_benchmark_cases
 from lims_agent.rag.loader import enrich_document_metadata, split_document_into_sections
 from lims_agent.rag.retriever import summarize_retrieval_results
@@ -77,6 +82,31 @@ def test_run_benchmark_suite_returns_summary_metrics():
     assert report["summary"]["passed"] >= 0
     assert "grounded_rate" in report["summary"]
     assert "avg_source_coverage" in report["summary"]
+
+
+def test_check_benchmark_thresholds_raises_when_quality_is_too_low():
+    cases = [
+        EvaluationCase(
+            question="What is the pH range?",
+            expected_answer="The pH range is 6.8 to 7.4.",
+            expected_sources=["SOP-02"],
+            retrieved_sources=["SOP-99"],
+            answer="The pH range is 7.0 to 7.8.",
+        )
+    ]
+
+    try:
+        check_benchmark_thresholds(
+            cases,
+            min_pass_rate=0.9,
+            min_grounded_rate=0.9,
+            min_retrieval_hit_rate=0.9,
+        )
+    except ValueError as exc:
+        assert "pass_rate" in str(exc).lower()
+        return
+
+    raise AssertionError("Expected benchmark threshold check to fail for poor quality")
 
 
 def test_split_document_into_sections_keeps_section_metadata():
