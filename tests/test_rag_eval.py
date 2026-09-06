@@ -1,6 +1,6 @@
 from langchain_core.documents import Document
 
-from lims_agent.eval.benchmark import EvaluationCase, evaluate_case
+from lims_agent.eval.benchmark import EvaluationCase, evaluate_case, run_benchmark_suite
 from lims_agent.eval.dataset import build_default_benchmark_cases
 from lims_agent.rag.loader import enrich_document_metadata, split_document_into_sections
 from lims_agent.tools.sops import make_get_sop_rules
@@ -65,6 +65,17 @@ def test_enrich_document_metadata_includes_source_fields(tmp_path):
     assert enriched.metadata["title"] == "sop general lab 2016 01"
     assert enriched.metadata["page_start"] == 3
     assert enriched.metadata["page_end"] == 3
+
+
+def test_run_benchmark_suite_returns_summary_metrics():
+    cases = build_default_benchmark_cases()
+    report = run_benchmark_suite(cases)
+
+    assert report["total_cases"] == len(cases)
+    assert report["summary"]["pass_rate"] >= 0.0
+    assert report["summary"]["passed"] >= 0
+    assert "grounded_rate" in report["summary"]
+    assert "avg_source_coverage" in report["summary"]
 
 
 def test_split_document_into_sections_keeps_section_metadata():

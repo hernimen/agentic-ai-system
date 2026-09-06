@@ -53,6 +53,36 @@ def evaluate_case(case: EvaluationCase) -> dict[str, Any]:
     }
 
 
+def run_benchmark_suite(cases: list[EvaluationCase]) -> dict[str, Any]:
+    """Aggregate case-level results into a single benchmark report."""
+    results = [evaluate_case(case) for case in cases]
+
+    total_cases = len(results)
+    passed = sum(1 for result in results if result["passed"])
+    grounded = sum(1 for result in results if result["grounded"])
+    retrieval_hit = sum(1 for result in results if result["retrieval_hit"])
+    source_coverage_values = [result["source_coverage"] for result in results]
+
+    summary = {
+        "total_cases": total_cases,
+        "passed": passed,
+        "pass_rate": (passed / total_cases) if total_cases else 0.0,
+        "grounded": grounded,
+        "grounded_rate": (grounded / total_cases) if total_cases else 0.0,
+        "retrieval_hit_count": retrieval_hit,
+        "retrieval_hit_rate": (retrieval_hit / total_cases) if total_cases else 0.0,
+        "avg_source_coverage": (
+            sum(source_coverage_values) / total_cases if total_cases else 0.0
+        ),
+    }
+
+    return {
+        "total_cases": total_cases,
+        "summary": summary,
+        "results": results,
+    }
+
+
 def run_ragas_benchmark(cases: list[EvaluationCase]) -> list[dict[str, Any]]:
     """Use the standard RAG evaluation stack when available.
 
