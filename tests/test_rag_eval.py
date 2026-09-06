@@ -2,7 +2,7 @@ from langchain_core.documents import Document
 
 from lims_agent.eval.benchmark import EvaluationCase, evaluate_case
 from lims_agent.eval.dataset import build_default_benchmark_cases
-from lims_agent.rag.loader import enrich_document_metadata
+from lims_agent.rag.loader import enrich_document_metadata, split_document_into_sections
 
 
 def test_build_default_benchmark_cases_returns_realistic_sop_questions():
@@ -64,3 +64,20 @@ def test_enrich_document_metadata_includes_source_fields(tmp_path):
     assert enriched.metadata["title"] == "sop general lab 2016 01"
     assert enriched.metadata["page_start"] == 3
     assert enriched.metadata["page_end"] == 3
+
+
+def test_split_document_into_sections_keeps_section_metadata():
+    doc = Document(
+        page_content=(
+            "Purpose\n\nThis SOP describes the procedure.\n\n"
+            "Safety\n\nWear gloves and goggles before handling samples."
+        ),
+        metadata={"title": "sample sop", "source_name": "sample.pdf"},
+    )
+
+    sections = split_document_into_sections(doc)
+
+    assert len(sections) >= 2
+    assert all("section_title" in section.metadata for section in sections)
+    assert sections[0].metadata["title"] == "sample sop"
+    assert sections[0].metadata["source_name"] == "sample.pdf"

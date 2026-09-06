@@ -1,4 +1,5 @@
 import logging
+import re
 from pathlib import Path
 
 from langchain_community.document_loaders import (
@@ -26,6 +27,32 @@ def _infer_source_category(source_dir: Path, source_file: Path) -> str:
     if "equipment" in source_dir_name or "manual" in source_name:
         return "equipment_manual"
     return "other"
+
+
+def split_document_into_sections(doc: Document) -> list[Document]:
+    text = doc.page_content.strip()
+    if not text:
+        return [doc]
+
+    blocks = [block.strip() for block in re.split(r"\n\s*\n+", text) if block.strip()]
+    if len(blocks) <= 1:
+        return [doc]
+
+    sections: list[Document] = []
+    for idx, block in enumerate(blocks):
+        section_title = block.splitlines()[0].strip() if block else "section"
+        section_text = block.strip()
+        metadata = dict(doc.metadata or {})
+        metadata.update(
+            {
+                "section_index": idx,
+                "section_title": section_title,
+                "section_text": section_text,
+            }
+        )
+        sections.append(Document(page_content=section_text, metadata=metadata))
+
+    return sections
 
 
 def enrich_document_metadata(
@@ -91,7 +118,9 @@ def load_and_split_docs(settings: Settings | None = None) -> list[Document]:
                     doc.metadata,
                 )
                 continue
-            docs.append(enrich_document_metadata(doc, source_dir, source_file))
+
+            enriched = enrich_document_metadata(doc, source_dir, source_file)
+            docs.extend(split_document_into_sections(enriched))
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=settings.chunk_size,
