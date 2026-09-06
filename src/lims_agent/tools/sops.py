@@ -29,10 +29,28 @@ def make_get_sop_rules(retriever: BaseRetriever) -> BaseTool:
 
         entries = []
         for doc in unique_docs:
-            source = doc.metadata.get("source", "unknown")
-            page = doc.metadata.get("page")
+            metadata = doc.metadata or {}
+            source = metadata.get("source", "unknown")
+            source_name = metadata.get("source_name") or metadata.get("source", "unknown")
+            document_id = metadata.get("document_id") or "unknown-document"
+            title = metadata.get("title") or "untitled"
+            section_title = metadata.get("section_title") or "section"
+            page_start = metadata.get("page_start")
+            page_end = metadata.get("page_end")
+
+            if page_start is not None and page_end is not None and page_start == page_end:
+                page_info = f"page {page_start}"
+            elif page_start is not None and page_end is not None:
+                page_info = f"pages {page_start}-{page_end}"
+            elif page_start is not None:
+                page_info = f"page {page_start}"
+            else:
+                page_info = "page unknown"
+
             label = (
-                f"[source: {source}, page {page}]" if page is not None else f"[source: {source}]"
+                "[source: "
+                f"{source_name} | document_id: {document_id} | title: {title} | "
+                f"section: {section_title} | {page_info}]"
             )
             entries.append(f"{label}\n{doc.page_content}")
         return "\n\n".join(entries)
