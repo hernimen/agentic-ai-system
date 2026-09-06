@@ -48,6 +48,7 @@ class ValidationMiddleware:
                         as_node="agent",
                     )
 
+            result["_validation"] = validation
             return result
 
         return validated_invoke

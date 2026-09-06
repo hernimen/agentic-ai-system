@@ -4,8 +4,32 @@ from fastapi import APIRouter, Depends
 
 from lims_agent.api.deps import get_agent_invoke
 from lims_agent.api.schemas import ChatRequest, ChatResponse
+from lims_agent.tools.sops import extract_sop_citations
 
 router = APIRouter(prefix="/api/v1", tags=["chat"])
+
+def _extract_citations(messages: list) -> list[dict]:
+    citations = []
+    seen = set()
+
+    for message in messages:
+        if getattr(message, "type", None) != "tool":
+            continue
+
+        artifact = getattr(message, "artifact", None) or extract_sop_citations(str(message.content))
+        for citation in artifact:
+            citation_key = (
+                citation["source_name"],
+                citation["document_id"],
+                citation["section"],
+                tuple(citation["pages"]),
+                citation["excerpt"],
+            )
+            if citation_key not in seen:
+                seen.add(citation_key)
+                citations.append(citation)
+
+    return citations
 
 
 @router.post("/chat/completions", response_model=ChatResponse)
@@ -16,7 +40,11 @@ async def chat_completion(
     inputs = {"messages": [("user", payload.message)]}
     config = {"configurable": {"thread_id": payload.thread_id}}
     result = await agent_invoke(inputs, config)
+    messages = result["messages"]
+    validation = result.get("_validation", {})
     return ChatResponse(
-        response=result["messages"][-1].content,
+        response=messages[-1].content,
         thread_id=payload.thread_id,
+        citations=_extract_citations(messages),
+        grounded=validation.get("is_valid"),
     )
