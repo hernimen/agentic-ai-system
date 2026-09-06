@@ -51,3 +51,37 @@ def evaluate_case(case: EvaluationCase) -> dict[str, Any]:
         "expected_sources": case.expected_sources,
         "retrieved_sources": case.retrieved_sources,
     }
+
+
+def run_ragas_benchmark(cases: list[EvaluationCase]) -> list[dict[str, Any]]:
+    """Use the standard RAG evaluation stack when available.
+
+    This keeps the project simple: if ragas/datasets are installed we use them,
+    otherwise we fall back to the local evaluator defined above.
+    """
+    try:
+        import importlib
+
+        dataset_module = importlib.import_module("datasets")
+        ragas_module = importlib.import_module("ragas")
+        ragas_metrics = importlib.import_module("ragas.metrics")
+
+        Dataset = dataset_module.Dataset
+        ragas_evaluate = ragas_module.evaluate
+        answer_relevancy = ragas_metrics.answer_relevancy
+        faithfulness = ragas_metrics.faithfulness
+    except ImportError:
+        return [evaluate_case(case) for case in cases]
+
+    rows = [
+        {
+            "question": case.question,
+            "answer": case.answer,
+            "contexts": [case.retrieved_sources],
+            "ground_truth": case.expected_answer,
+        }
+        for case in cases
+    ]
+    dataset = Dataset.from_list(rows)
+    result = ragas_evaluate(dataset, metrics=[faithfulness, answer_relevancy])
+    return result.to_dict() if hasattr(result, "to_dict") else result
