@@ -53,10 +53,14 @@ def test_enrich_document_metadata_includes_source_fields(tmp_path):
     source_file = source_dir / "sop_general_lab_2016-01.pdf"
     source_file.write_bytes(b"test")
 
-    doc = Document(page_content="sample text", metadata={})
+    doc = Document(page_content="sample text", metadata={"page": 3})
     enriched = enrich_document_metadata(doc, source_dir, source_file)
 
     assert enriched.metadata["source"].endswith("sop_general_lab_2016-01.pdf")
+    assert enriched.metadata["source_path"].endswith("sop_general_lab_2016-01.pdf")
     assert enriched.metadata["document_id"] == "sop_general_lab_2016-01"
     assert enriched.metadata["doc_type"] == "sops"
+    assert enriched.metadata["source_category"] == "sop"
     assert enriched.metadata["title"] == "sop general lab 2016 01"
+    assert enriched.metadata["page_start"] == 3
+    assert enriched.metadata["page_end"] == 3

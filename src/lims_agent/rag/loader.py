@@ -13,6 +13,21 @@ from lims_agent.core.config import Settings, get_settings
 logger = logging.getLogger(__name__)
 
 
+def _normalize_title_from_path(path: Path) -> str:
+    return path.stem.replace("_", " ").replace("-", " ").strip().lower()
+
+
+def _infer_source_category(source_dir: Path, source_file: Path) -> str:
+    source_dir_name = source_dir.name.lower()
+    source_name = source_file.name.lower()
+
+    if "sop" in source_dir_name or "sop" in source_name:
+        return "sop"
+    if "equipment" in source_dir_name or "manual" in source_name:
+        return "equipment_manual"
+    return "other"
+
+
 def enrich_document_metadata(
     doc: Document,
     source_dir: Path,
@@ -21,16 +36,23 @@ def enrich_document_metadata(
     source_name = source_file.name
     stem = source_file.stem
     doc_type = source_dir.name
-    title = stem.replace("_", " ").replace("-", " ").strip().lower()
+    title = _normalize_title_from_path(source_file)
 
     metadata = dict(doc.metadata or {})
+    page_start = metadata.get("page") or metadata.get("page_start") or 1
+    page_end = metadata.get("page_end") or page_start
+
     metadata.update(
         {
             "source": str(source_file),
+            "source_path": str(source_file),
             "source_name": source_name,
+            "source_category": _infer_source_category(source_dir, source_file),
             "document_id": stem,
             "doc_type": doc_type,
             "title": title,
+            "page_start": int(page_start),
+            "page_end": int(page_end),
         }
     )
     doc.metadata = metadata
@@ -55,7 +77,20 @@ def load_and_split_docs(settings: Settings | None = None) -> list[Document]:
             loader_cls=PyPDFLoader,
         ).load()
 
-        for source_file, doc in zip(source_files, loaded_docs, strict=False):
+        source_by_name = {source_file.name: source_file for source_file in source_files}
+        for doc in loaded_docs:
+            doc_source = Path(str(doc.metadata.get("source", "")))
+            source_file = source_by_name.get(doc_source.name)
+            if source_file is None:
+                fallback_name = doc_source.name or Path(str(doc.metadata.get("file_path", ""))).name
+                source_file = source_by_name.get(fallback_name)
+            if source_file is None:
+                logger.warning(
+                    "sops.unmatched_document source_dir=%s metadata=%s",
+                    source_dir,
+                    doc.metadata,
+                )
+                continue
             docs.append(enrich_document_metadata(doc, source_dir, source_file))
 
     splitter = RecursiveCharacterTextSplitter(
