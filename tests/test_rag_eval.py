@@ -1,5 +1,8 @@
+from langchain_core.documents import Document
+
 from lims_agent.eval.benchmark import EvaluationCase, evaluate_case
 from lims_agent.eval.dataset import build_default_benchmark_cases
+from lims_agent.rag.loader import enrich_document_metadata
 
 
 def test_build_default_benchmark_cases_returns_realistic_sop_questions():
@@ -42,3 +45,18 @@ def test_evaluate_case_flags_ungrounded_answer():
     assert result["passed"] is False
     assert result["grounded"] is False
     assert result["retrieval_hit"] is False
+
+
+def test_enrich_document_metadata_includes_source_fields(tmp_path):
+    source_dir = tmp_path / "sops"
+    source_dir.mkdir()
+    source_file = source_dir / "sop_general_lab_2016-01.pdf"
+    source_file.write_bytes(b"test")
+
+    doc = Document(page_content="sample text", metadata={})
+    enriched = enrich_document_metadata(doc, source_dir, source_file)
+
+    assert enriched.metadata["source"].endswith("sop_general_lab_2016-01.pdf")
+    assert enriched.metadata["document_id"] == "sop_general_lab_2016-01"
+    assert enriched.metadata["doc_type"] == "sops"
+    assert enriched.metadata["title"] == "sop general lab 2016 01"
