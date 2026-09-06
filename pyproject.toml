@@ -1,0 +1,84 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lims-agent"
+version = "0.1.0"
+description = "Agentic SOP and AI assistant for LIMS (POC)."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.116.1",
+    "uvicorn[standard]==0.35.0",
+    "langgraph==0.6.11",
+    "langgraph-checkpoint-sqlite>=2.0.0",
+    "langchain==0.3.30",
+    "langchain-ollama==0.3.10",
+    "langchain-chroma",
+    "langchain-community",
+    "langchain-text-splitters",
+    "pydantic==2.13.4",
+    "pydantic-settings>=2.4",
+    "python-dotenv==1.2.1",
+    "rank_bm25",
+    "pypdf",
+    "sentence-transformers>=5.7.0",
+    "truststore>=0.10.4",
+    "httpx>=0.28.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.27",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+eval = [
+    "datasets>=5.0.1",
+    "openai>=2.53.0",
+    "ragas>=0.4.3",
+]
+reranking = [
+    "sentence-transformers>=2.2.0",
+]
+anthropic = [
+    "langchain-anthropic>=0.3.0",
+]
+groq = [
+    "langchain-groq>=0.2.0",
+]
+
+[project.scripts]
+lims-ingest = "lims_agent.rag.ingest:main"
+lims-serve = "lims_agent.api.main:run"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lims_agent"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path"]
+
+[tool.mypy]
+python_version = "3.12"
+strict_optional = true
+disallow_untyped_defs = true
+files = ["src/lims_agent"]
+
+[[tool.mypy.overrides]]
+module = ["langchain.*", "langchain_community.*", "langchain_chroma.*", "langchain_ollama.*", "langgraph.*", "rank_bm25.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -q"
+asyncio_mode = "auto"

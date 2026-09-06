@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: lims-agent-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:////data/lims_agent.db
+      - CHROMA_PERSIST_DIR=/data/chroma_db
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY}
+      - LANGSMITH_TRACING=${LANGSMITH_TRACING:-true}
+      - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-lims-sop-agent}
+    volumes:
+      - ./data:/data
+    depends_on:
+      - ollama
+    networks:
+      - lims-network
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: lims-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - lims-network
+    restart: unless-stopped
+    # Pull required model on startup
+    # Uncomment and run: docker compose exec ollama ollama pull nomic-embed-text
+
+volumes:
+  ollama_data:
+
+networks:
+  lims-network:
+    driver: bridge
