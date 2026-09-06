@@ -3,6 +3,7 @@ from langchain_core.documents import Document
 from lims_agent.eval.benchmark import EvaluationCase, evaluate_case, run_benchmark_suite
 from lims_agent.eval.dataset import build_default_benchmark_cases
 from lims_agent.rag.loader import enrich_document_metadata, split_document_into_sections
+from lims_agent.rag.retriever import summarize_retrieval_results
 from lims_agent.tools.sops import make_get_sop_rules
 
 
@@ -93,6 +94,31 @@ def test_split_document_into_sections_keeps_section_metadata():
     assert all("section_title" in section.metadata for section in sections)
     assert sections[0].metadata["title"] == "sample sop"
     assert sections[0].metadata["source_name"] == "sample.pdf"
+
+
+def test_summarize_retrieval_results_tracks_source_metadata():
+    docs = [
+        Document(
+            page_content="The pH range is between 6.8 and 7.4.",
+            metadata={
+                "source": "/data/sops/sop_general_lab_2016-01.pdf",
+                "source_name": "sop_general_lab_2016-01.pdf",
+                "document_id": "sop_general_lab_2016-01",
+                "title": "sop general lab 2016 01",
+                "section_title": "pH requirements",
+                "page_start": 14,
+                "page_end": 14,
+            },
+        )
+    ]
+
+    summary = summarize_retrieval_results(docs)
+
+    assert summary["total_docs"] == 1
+    assert summary["documents"][0]["source_name"] == "sop_general_lab_2016-01.pdf"
+    assert summary["documents"][0]["document_id"] == "sop_general_lab_2016-01"
+    assert summary["documents"][0]["section_title"] == "pH requirements"
+    assert summary["documents"][0]["page_start"] == 14
 
 
 def test_make_get_sop_rules_includes_explicit_evidence_metadata():

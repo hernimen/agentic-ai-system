@@ -16,6 +16,30 @@ from lims_agent.rag.reranker import DocumentReranker, build_reranker
 logger = logging.getLogger(__name__)
 
 
+def summarize_retrieval_results(docs: list[Document]) -> dict:
+    """Return a compact record of retrieved docs for observability and debugging."""
+    summarized = []
+    for doc in docs:
+        metadata = doc.metadata or {}
+        summarized.append(
+            {
+                "source": metadata.get("source", "unknown"),
+                "source_name": metadata.get("source_name") or metadata.get("source", "unknown"),
+                "document_id": metadata.get("document_id") or "unknown-document",
+                "title": metadata.get("title") or "untitled",
+                "section_title": metadata.get("section_title") or "section",
+                "page_start": metadata.get("page_start"),
+                "page_end": metadata.get("page_end"),
+                "content_preview": doc.page_content[:200],
+            }
+        )
+
+    return {
+        "total_docs": len(docs),
+        "documents": summarized,
+    }
+
+
 def build_embeddings(settings: Settings | None = None) -> OllamaEmbeddings:
     settings = settings or get_settings()
     return OllamaEmbeddings(model=settings.embedding_model, base_url=settings.ollama_base_url)
@@ -69,7 +93,12 @@ class QueryRewritingRetriever(BaseRetriever):
                 seen_content.add(doc.page_content)
                 unique_docs.append(doc)
 
-        logger.info("rag.query_rewriting retrieved=%d unique=%d", len(all_docs), len(unique_docs))
+        logger.info(
+            "rag.query_rewriting retrieved=%d unique=%d summary=%s",
+            len(all_docs),
+            len(unique_docs),
+            summarize_retrieval_results(unique_docs),
+        )
         return unique_docs
 
 
@@ -98,6 +127,7 @@ class RerankingRetriever(BaseRetriever):
 
         try:
             ranked_docs = await self.reranker.rerank(docs, query)
+            logger.info("rag.reranking summary=%s", summarize_retrieval_results(ranked_docs))
             return ranked_docs
         except Exception:
             logger.warning("rag.reranking_failed returning_original", exc_info=True)
