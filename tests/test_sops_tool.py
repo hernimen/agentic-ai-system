@@ -23,4 +23,45 @@ def test_get_sop_rules_limits_evidence_documents(stub_retriever):
 
     content = make_get_sop_rules(stub_retriever).invoke({"query": "pH"})
 
-    assert content.count("[source:") == 2
+    assert content.count("[source:") == 3
+
+
+def test_get_sop_rules_prefers_documents_matching_named_instrument(stub_retriever):
+    stub_retriever.docs = [
+        Document(
+            page_content="Autoclave sterilization procedure.",
+            metadata={"source_name": "autoclave.pdf"},
+        ),
+        Document(
+            page_content="Shaker operation procedure.", metadata={"source_name": "shaker.pdf"}
+        ),
+        Document(
+            page_content="General biosafety requirements.", metadata={"source_name": "safety.pdf"}
+        ),
+    ]
+
+    content = make_get_sop_rules(stub_retriever).invoke(
+        {"query": "autoclave operation procedure safety"}
+    )
+
+    assert "autoclave.pdf" in content
+    assert "shaker.pdf" not in content
+    assert "safety.pdf" not in content
+
+
+def test_get_sop_rules_prioritizes_explicit_sop_identifier(stub_retriever):
+    stub_retriever.docs = [
+        Document(
+            page_content="SOP-02 storage temperature is 2-8 C.",
+            metadata={"document_id": "SOP-02", "source_name": "sop-02.pdf"},
+        ),
+        Document(
+            page_content="SOP-07 incubation time is 24 hours.",
+            metadata={"document_id": "SOP-07", "source_name": "sop-07.pdf"},
+        ),
+    ]
+
+    content = make_get_sop_rules(stub_retriever).invoke({"query": "SOP-02 storage temperature"})
+
+    assert "sop-02.pdf" in content
+    assert "sop-07.pdf" not in content

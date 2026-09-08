@@ -1,7 +1,17 @@
+from lims_agent.agent.prompts import SYSTEM_PROMPT
 from lims_agent.agent.validators import ResponseValidator
 
 
 class TestResponseValidator:
+    def test_prompt_routes_equipment_questions_to_sop_retrieval(self):
+        prompt = SYSTEM_PROMPT.content.lower()
+
+        assert "laboratory equipment" in prompt
+        assert "any named laboratory instrument" in prompt
+        assert "descriptive or broad equipment questions" in prompt
+        assert "do not substitute one parameter" in prompt
+        assert "operation, procedure, safety, and parameters" in prompt
+
     def test_extract_numbers(self):
         text = "pH range 7.0-7.4 at 25°C for 2 hours"
         numbers = ResponseValidator.extract_numbers(text)

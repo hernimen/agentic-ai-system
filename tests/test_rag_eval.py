@@ -7,6 +7,7 @@ from lims_agent.eval.benchmark import (
     run_benchmark_suite,
 )
 from lims_agent.eval.dataset import build_default_benchmark_cases
+from lims_agent.rag.ingest import chunk_batches
 from lims_agent.rag.loader import enrich_document_metadata, split_document_into_sections
 from lims_agent.rag.retriever import summarize_retrieval_results
 from lims_agent.tools.sops import make_get_sop_rules
@@ -124,6 +125,12 @@ def test_split_document_into_sections_keeps_section_metadata():
     assert all("section_title" in section.metadata for section in sections)
     assert sections[0].metadata["title"] == "sample sop"
     assert sections[0].metadata["source_name"] == "sample.pdf"
+
+
+def test_chunk_batches_limits_embedding_batch_size():
+    chunks = list(range(7))
+
+    assert list(chunk_batches(chunks, 3)) == [[0, 1, 2], [3, 4, 5], [6]]
 
 
 def test_summarize_retrieval_results_tracks_source_metadata():
