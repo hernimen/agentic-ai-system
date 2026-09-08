@@ -26,6 +26,7 @@ chroma_db/
 *.db
 *.sqlite3
 data/*.db
+data/*.db-*
 
 # OS/editor noise
 .DS_Store
