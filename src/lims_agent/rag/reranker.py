@@ -2,7 +2,6 @@ import logging
 from abc import ABC, abstractmethod
 
 from langchain_core.documents import Document
-from sentence_transformers import CrossEncoder
 
 from lims_agent.core.config import Settings, get_settings
 
@@ -39,6 +38,8 @@ class CrossEncoderReranker(DocumentReranker):
         """Lazy load model to avoid startup cost."""
         if self._model is None:
             try:
+                from sentence_transformers import CrossEncoder
+
                 logger.info("rag.reranking loading_model model=%s", self.model_name)
                 self._model = CrossEncoder(self.model_name)
             except ImportError as e:

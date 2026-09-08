@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.runnables import RunnableLambda
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import START, MessagesState, StateGraph
@@ -34,9 +34,38 @@ class _StubGraph:
         return await self._runnable.ainvoke(input_data, config=config)
 
 
+class _ToolEvidenceGraph:
+    async def ainvoke(self, input_data: dict, config: dict | None = None) -> dict:
+        return {
+            "messages": [
+                ToolMessage(
+                    content="A caustic substance has 2 < pH < 12.",
+                    tool_call_id="call-1",
+                ),
+                AIMessage(content="The pH range for injectables is 2 < pH < 12."),
+            ]
+        }
+
+
 def test_no_langsmith_client_when_tracing_enabled_but_key_blank():
     middleware = ValidationMiddleware(_settings(langsmith_tracing=True, langsmith_api_key=""))
     assert middleware._langsmith_client is None
+
+
+@pytest.mark.asyncio
+async def test_validation_reads_tool_evidence_before_final_answer():
+    middleware = ValidationMiddleware(_settings(langsmith_tracing=False))
+    invoke = middleware.wrap_agent(_ToolEvidenceGraph())
+
+    result = await invoke(
+        {"messages": [("user", "What is the pH range for injectables?")]},
+        config={},
+    )
+
+    assert result["_validation"]["is_valid"] is False
+    assert result["messages"][-1].content == (
+        "I do not have that information in the authorized SOPs."
+    )
 
 
 @pytest.mark.asyncio

@@ -6,6 +6,8 @@ from langchain_core.tools import BaseTool, tool
 
 logger = logging.getLogger(__name__)
 
+MAX_EVIDENCE_DOCUMENTS = 2
+
 _EVIDENCE_LABEL = re.compile(
     r"\[source: (?P<source>[^|]+) \| document_id: (?P<document_id>[^|]+) \| "
     r"title: (?P<title>[^|]+) \| section: (?P<section>[^|]+) \| "
@@ -53,7 +55,7 @@ def make_get_sop_rules(retriever: BaseRetriever) -> BaseTool:
 
         entries = []
         citations = []
-        for doc in unique_docs:
+        for doc in unique_docs[:MAX_EVIDENCE_DOCUMENTS]:
             metadata = doc.metadata or {}
             source_name = metadata.get("source_name") or metadata.get("source", "unknown")
             document_id = metadata.get("document_id") or "unknown-document"

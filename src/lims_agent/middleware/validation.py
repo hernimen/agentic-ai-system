@@ -24,9 +24,11 @@ class ValidationMiddleware:
 
             last_message = result["messages"][-1]
             tool_outputs = self._extract_tool_outputs(result["messages"])
+            query = self._extract_query(input_data)
 
             validation = self.validator.validate_response(
                 response=str(last_message.content),
+                query=query,
                 tool_outputs=tool_outputs if tool_outputs else None,
                 strict_mode=self.settings.block_uncertain_responses,
             )
@@ -66,9 +68,22 @@ class ValidationMiddleware:
 
     def _extract_tool_outputs(self, messages: list) -> list[str]:
         tool_outputs = []
+        final_ai_seen = False
         for msg in reversed(messages):
             if hasattr(msg, "type") and msg.type == "tool":
                 tool_outputs.append(str(msg.content))
             elif hasattr(msg, "type") and msg.type == "ai":
-                break
+                if final_ai_seen:
+                    break
+                final_ai_seen = True
         return tool_outputs
+
+    def _extract_query(self, input_data: dict) -> str:
+        messages = input_data.get("messages", [])
+        if not messages:
+            return ""
+
+        latest_message = messages[-1]
+        if isinstance(latest_message, tuple):
+            return str(latest_message[1])
+        return str(getattr(latest_message, "content", ""))

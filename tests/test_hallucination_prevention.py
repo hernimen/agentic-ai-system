@@ -83,6 +83,17 @@ class TestResponseValidator:
         )
         assert result["is_valid"]
 
+    def test_rejects_numbers_when_query_concept_is_missing_from_evidence(self):
+        result = ResponseValidator.validate_response(
+            response="The pH range for injectables is 2 < pH < 12.",
+            query="What is the acceptable pH range for injectables?",
+            tool_outputs=["A caustic substance has 2 < pH < 12."],
+            strict_mode=True,
+        )
+
+        assert not result["is_valid"]
+        assert "Query concepts are not grounded in tool outputs" in result["violations"]
+
     def test_empty_response(self):
         result = ResponseValidator.validate_response(
             response="",

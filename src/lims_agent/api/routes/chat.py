@@ -43,9 +43,10 @@ async def chat_completion(
     result = await agent_invoke(inputs, config)
     messages = result["messages"]
     validation = result.get("_validation", {})
+    citations = _extract_citations(messages) if validation.get("is_valid") is not False else []
     return ChatResponse(
         response=messages[-1].content,
         thread_id=payload.thread_id,
-        citations=_extract_citations(messages),
+        citations=citations,
         grounded=validation.get("is_valid"),
     )

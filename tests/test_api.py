@@ -1,5 +1,6 @@
-from langchain_core.messages import ToolMessage
+from langchain_core.messages import AIMessage, ToolMessage
 
+from lims_agent.api.deps import get_agent_invoke
 from lims_agent.api.routes.chat import _extract_citations
 from lims_agent.tools.sops import extract_sop_citations
 
@@ -17,6 +18,31 @@ def test_chat_completions_smoke(client):
         "citations": [],
         "grounded": None,
     }
+
+
+def test_chat_completions_hides_citations_for_invalid_response(client):
+    async def invalid_invoke(inputs: dict, config: dict | None = None) -> dict:
+        return {
+            "messages": [
+                ToolMessage(
+                    content="A caustic substance has 2 < pH < 12.",
+                    tool_call_id="call-1",
+                    artifact=[{"source_name": "irrelevant.pdf"}],
+                ),
+                AIMessage(content="I do not have that information in the authorized SOPs."),
+            ],
+            "_validation": {"is_valid": False},
+        }
+
+    client.app.dependency_overrides[get_agent_invoke] = lambda: invalid_invoke
+
+    response = client.post(
+        "/api/v1/chat/completions",
+        json={"message": "pH for injectables", "thread_id": "t1"},
+    )
+
+    assert response.json()["grounded"] is False
+    assert response.json()["citations"] == []
 
 
 def test_extract_citations_preserves_structured_source_metadata():
