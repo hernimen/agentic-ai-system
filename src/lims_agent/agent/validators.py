@@ -6,6 +6,24 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+_MEASUREMENT_RE = re.compile(
+    r"(?P<number>\d+(?:[.,]\d+)?)\s*"
+    r"(?P<unit>°?(?:celsius|fahrenheit|kelvin|degrees?|[cfk]))?\b",
+    re.IGNORECASE,
+)
+_UNIT_ALIASES = {
+    "c": "c",
+    "celsius": "c",
+    "degreec": "c",
+    "degrees c": "c",
+    "f": "f",
+    "fahrenheit": "f",
+    "degreef": "f",
+    "degrees f": "f",
+    "k": "k",
+    "kelvin": "k",
+}
+
 
 class ResponseValidator:
     QUERY_STOPWORDS = {
@@ -70,14 +88,27 @@ class ResponseValidator:
     def extract_numbers(cls, text: str) -> set[str]:
         if not text:
             return set()
-        numbers = re.findall(r"\d+\.?\d*", str(text))
-        normalized_numbers = set()
-        for number in numbers:
+        return {number for number, _ in cls.extract_measurements(text)}
+
+    @classmethod
+    def extract_measurements(cls, text: str) -> set[tuple[str, str | None]]:
+        if not text:
+            return set()
+
+        measurements = set()
+        for match in _MEASUREMENT_RE.finditer(str(text)):
+            raw_number = match.group("number").replace(",", ".")
             try:
-                normalized_numbers.add(format(Decimal(number).normalize(), "f"))
+                number = format(Decimal(raw_number).normalize(), "f")
             except InvalidOperation:
-                normalized_numbers.add(number)
-        return normalized_numbers
+                number = raw_number
+
+            raw_unit = match.group("unit")
+            unit = None
+            if raw_unit:
+                unit = _UNIT_ALIASES.get(raw_unit.lower().replace("°", ""), raw_unit.lower())
+            measurements.add((number, unit))
+        return measurements
 
     @classmethod
     def check_forbidden_phrases(cls, response: str) -> list[str]:
@@ -101,18 +132,23 @@ class ResponseValidator:
         if not response:
             return True, []
 
-        response_numbers = cls.extract_numbers(response)
-
-        tool_numbers = set()
+        response_measurements = cls.extract_measurements(response)
+        tool_measurements = set()
         for output in tool_outputs:
-            tool_numbers.update(cls.extract_numbers(output))
+            tool_measurements.update(cls.extract_measurements(output))
 
-        hallucinated = response_numbers - tool_numbers
+        tool_numbers = {number for number, _ in tool_measurements}
+        hallucinated = {
+            number
+            for number, unit in response_measurements
+            if (number, unit) not in tool_measurements
+            and (unit is not None or number not in tool_numbers)
+        }
 
         if hallucinated:
             logger.warning(
                 "hallucination.ungrounded_numbers response_nums=%s tool_nums=%s hallucinated=%s",
-                response_numbers,
+                response_measurements,
                 tool_numbers,
                 hallucinated,
             )

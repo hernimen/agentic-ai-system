@@ -60,6 +60,24 @@ class TestResponseValidator:
         assert is_valid
         assert hallucinated == []
 
+    def test_number_grounding_normalizes_equivalent_temperature_units(self):
+        response = "The storage temperature is 25 C."
+        tool_outputs = ["SOP-02: The storage temperature is 25°C."]
+
+        is_valid, hallucinated = ResponseValidator.verify_numbers_grounded(response, tool_outputs)
+
+        assert is_valid
+        assert hallucinated == []
+
+    def test_number_grounding_rejects_incompatible_temperature_units(self):
+        response = "The storage temperature is 25°F."
+        tool_outputs = ["SOP-02: The storage temperature is 25°C."]
+
+        is_valid, hallucinated = ResponseValidator.verify_numbers_grounded(response, tool_outputs)
+
+        assert not is_valid
+        assert hallucinated == ["25"]
+
     def test_number_grounding_invalid(self):
         response = "The pH range is 6.5-7.5"
         tool_outputs = ["SOP-02: pH must be maintained between 7.0 and 7.4"]
