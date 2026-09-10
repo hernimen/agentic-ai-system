@@ -126,3 +126,28 @@ If a question seems to return a weak or unrelated answer, make sure:
 - the index was rebuilt with `make ingest`
 - you are using a fresh thread ID
 - the query is specific enough to match the correct SOP topic
+
+## 9) Automated quality checks
+
+Run the default suite without requiring Ollama, a hosted LLM, or Ragas:
+
+```bash
+make test
+make lint
+make typecheck
+```
+
+The RAG benchmark uses deterministic checks for expected values, source
+coverage, citations, and groundedness:
+
+```bash
+make benchmark
+```
+
+When the optional evaluation dependencies and model configuration are available,
+the benchmark can also evaluate the stored evidence context with Ragas. Ragas
+contexts must be the retrieved evidence text, not only source identifiers.
+
+Production chat responses expose citations from the structured tool artifact.
+Each citation includes the source name, document ID, title, section, page list,
+and evidence excerpt. Missing artifacts do not produce citations.
