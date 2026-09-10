@@ -21,6 +21,7 @@ def test_build_default_benchmark_cases_returns_realistic_sop_questions():
     assert any("ph" in case.question.lower() for case in cases)
     assert any("ppe" in case.question.lower() for case in cases)
     assert any("temperature" in case.question.lower() for case in cases)
+    assert all(case.context for case in cases)
 
 
 def test_evaluate_case_marks_grounded_answer_as_pass():
