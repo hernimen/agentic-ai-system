@@ -87,4 +87,3 @@ def test_extract_citations_does_not_fallback_when_artifact_is_empty():
     ]
 
     assert _extract_citations(messages) == []
-

@@ -103,7 +103,8 @@ def check_benchmark_thresholds(
         )
     if summary["grounded_rate"] < min_grounded_rate:
         failures.append(
-            f"grounded_rate={summary['grounded_rate']:.2f} is below required {min_grounded_rate:.2f}"
+            f"grounded_rate={summary['grounded_rate']:.2f} is below required "
+            f"{min_grounded_rate:.2f}"
         )
     if summary["retrieval_hit_rate"] < min_retrieval_hit_rate:
         failures.append(
@@ -154,9 +155,7 @@ def run_ragas_benchmark(cases: list[EvaluationCase]) -> list[dict[str, Any]]:
         "context_recall",
     )
     metrics = [
-        getattr(ragas_metrics, name)
-        for name in metric_names
-        if hasattr(ragas_metrics, name)
+        getattr(ragas_metrics, name) for name in metric_names if hasattr(ragas_metrics, name)
     ]
     dataset = Dataset.from_list(_build_ragas_rows(cases))
     result = ragas_evaluate(dataset, metrics=metrics)
