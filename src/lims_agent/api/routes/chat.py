@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends
 
 from lims_agent.api.deps import get_agent_invoke
 from lims_agent.api.schemas import ChatRequest, ChatResponse
-from lims_agent.tools.sops import extract_sop_citations
 
 router = APIRouter(prefix="/api/v1", tags=["chat"])
 
@@ -17,7 +16,9 @@ def _extract_citations(messages: list) -> list[dict]:
         if getattr(message, "type", None) != "tool":
             continue
 
-        artifact = getattr(message, "artifact", None) or extract_sop_citations(str(message.content))
+        artifact = getattr(message, "artifact", None)
+        if artifact is None:
+            continue
         for citation in artifact:
             citation_key = (
                 citation["source_name"],

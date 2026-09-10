@@ -73,30 +73,6 @@ def _format_page_info(page_start: int | None, page_end: int | None) -> str:
     return "page unknown"
 
 
-_EVIDENCE_LABEL = re.compile(
-    r"\[source: (?P<source>[^|]+) \| document_id: (?P<document_id>[^|]+) \| "
-    r"title: (?P<title>[^|]+) \| section: (?P<section>[^|]+) \| "
-    r"(?P<page_info>pages? [^\]]+)\]\n(?P<excerpt>.*?)(?=\n\n\[source:|\Z)",
-    re.DOTALL,
-)
-
-
-def extract_sop_citations(content: str) -> list[dict]:
-    citations = []
-    for match in _EVIDENCE_LABEL.finditer(content):
-        citations.append(
-            {
-                "source_name": match.group("source").strip(),
-                "document_id": match.group("document_id").strip(),
-                "title": match.group("title").strip(),
-                "section": match.group("section").strip(),
-                "pages": [int(value) for value in re.findall(r"\d+", match.group("page_info"))],
-                "excerpt": match.group("excerpt").strip(),
-            }
-        )
-    return citations
-
-
 def make_get_sop_rules(retriever: BaseRetriever) -> BaseTool:
     @tool(response_format="content_and_artifact")
     def get_sop_rules(query: str) -> tuple[str, list[dict]]:

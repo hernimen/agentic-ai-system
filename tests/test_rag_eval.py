@@ -2,6 +2,7 @@ from langchain_core.documents import Document
 
 from lims_agent.eval.benchmark import (
     EvaluationCase,
+    _build_ragas_rows,
     check_benchmark_thresholds,
     evaluate_case,
     run_benchmark_suite,
@@ -83,6 +84,22 @@ def test_run_benchmark_suite_returns_summary_metrics():
     assert report["summary"]["passed"] >= 0
     assert "grounded_rate" in report["summary"]
     assert "avg_source_coverage" in report["summary"]
+
+
+def test_build_ragas_rows_uses_retrieved_context_text():
+    cases = [
+        EvaluationCase(
+            question="What is the pH range?",
+            expected_answer="The pH range is 6.8 to 7.4.",
+            retrieved_sources=["SOP-02"],
+            context="The authorized pH range is 6.8 to 7.4.",
+            answer="The pH range is 6.8 to 7.4.",
+        )
+    ]
+
+    rows = _build_ragas_rows(cases)
+
+    assert rows[0]["contexts"] == ["The authorized pH range is 6.8 to 7.4."]
 
 
 def test_check_benchmark_thresholds_raises_when_quality_is_too_low():

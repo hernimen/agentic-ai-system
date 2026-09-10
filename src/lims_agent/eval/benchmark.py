@@ -117,6 +117,18 @@ def check_benchmark_thresholds(
     return report
 
 
+def _build_ragas_rows(cases: list[EvaluationCase]) -> list[dict[str, Any]]:
+    return [
+        {
+            "question": case.question,
+            "answer": case.answer,
+            "contexts": [case.context] if case.context else [],
+            "ground_truth": case.expected_answer,
+        }
+        for case in cases
+    ]
+
+
 def run_ragas_benchmark(cases: list[EvaluationCase]) -> list[dict[str, Any]]:
     """Use the standard RAG evaluation stack when available.
 
@@ -132,20 +144,20 @@ def run_ragas_benchmark(cases: list[EvaluationCase]) -> list[dict[str, Any]]:
 
         Dataset = dataset_module.Dataset
         ragas_evaluate = ragas_module.evaluate
-        answer_relevancy = ragas_metrics.answer_relevancy
-        faithfulness = ragas_metrics.faithfulness
     except ImportError:
         return [evaluate_case(case) for case in cases]
 
-    rows = [
-        {
-            "question": case.question,
-            "answer": case.answer,
-            "contexts": [case.retrieved_sources],
-            "ground_truth": case.expected_answer,
-        }
-        for case in cases
+    metric_names = (
+        "faithfulness",
+        "answer_relevancy",
+        "context_precision",
+        "context_recall",
+    )
+    metrics = [
+        getattr(ragas_metrics, name)
+        for name in metric_names
+        if hasattr(ragas_metrics, name)
     ]
-    dataset = Dataset.from_list(rows)
-    result = ragas_evaluate(dataset, metrics=[faithfulness, answer_relevancy])
+    dataset = Dataset.from_list(_build_ragas_rows(cases))
+    result = ragas_evaluate(dataset, metrics=metrics)
     return result.to_dict() if hasattr(result, "to_dict") else result

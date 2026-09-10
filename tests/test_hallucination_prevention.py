@@ -51,6 +51,15 @@ class TestResponseValidator:
         assert is_valid, "Valid numbers should pass"
         assert len(hallucinated) == 0
 
+    def test_number_grounding_normalizes_decimal_formatting(self):
+        response = "The target pH is 7.0."
+        tool_outputs = ["SOP-02: The target pH is 7.00."]
+
+        is_valid, hallucinated = ResponseValidator.verify_numbers_grounded(response, tool_outputs)
+
+        assert is_valid
+        assert hallucinated == []
+
     def test_number_grounding_invalid(self):
         response = "The pH range is 6.5-7.5"
         tool_outputs = ["SOP-02: pH must be maintained between 7.0 and 7.4"]

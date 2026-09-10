@@ -1,6 +1,7 @@
 import logging
 import re
 import unicodedata
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -70,7 +71,13 @@ class ResponseValidator:
         if not text:
             return set()
         numbers = re.findall(r"\d+\.?\d*", str(text))
-        return set(numbers)
+        normalized_numbers = set()
+        for number in numbers:
+            try:
+                normalized_numbers.add(format(Decimal(number).normalize(), "f"))
+            except InvalidOperation:
+                normalized_numbers.add(number)
+        return normalized_numbers
 
     @classmethod
     def check_forbidden_phrases(cls, response: str) -> list[str]:

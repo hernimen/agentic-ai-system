@@ -2,7 +2,6 @@ from langchain_core.messages import AIMessage, ToolMessage
 
 from lims_agent.api.deps import get_agent_invoke
 from lims_agent.api.routes.chat import _extract_citations
-from lims_agent.tools.sops import extract_sop_citations
 
 
 def test_chat_completions_smoke(client):
@@ -75,10 +74,17 @@ def test_extract_citations_preserves_structured_source_metadata():
     ]
 
 
-def test_extract_sop_citations_supports_legacy_tool_message_content():
-    content = (
-        "[source: sop.pdf | document_id: sop-01 | title: Safety SOP | "
-        "section: PPE | page 4]\nWear gloves and eye protection."
-    )
+def test_extract_citations_does_not_fallback_when_artifact_is_empty():
+    messages = [
+        ToolMessage(
+            content=(
+                "[source: legacy.pdf | document_id: legacy-01 | title: Legacy | "
+                "section: Old | page 2]\nLegacy evidence."
+            ),
+            tool_call_id="call-1",
+            artifact=[],
+        )
+    ]
 
-    assert extract_sop_citations(content)[0]["pages"] == [4]
+    assert _extract_citations(messages) == []
+
