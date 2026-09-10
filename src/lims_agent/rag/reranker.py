@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from abc import ABC, abstractmethod
 
@@ -58,7 +59,7 @@ class CrossEncoderReranker(DocumentReranker):
             model = self._load_model()
 
             pairs = [(query, doc.page_content) for doc in documents]
-            scores = model.predict(pairs)
+            scores = await asyncio.to_thread(model.predict, pairs)
 
             scored_docs = list(zip(documents, scores, strict=True))
             scored_docs.sort(key=lambda x: x[1], reverse=True)
