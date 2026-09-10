@@ -38,7 +38,6 @@ class Settings(BaseSettings):
     query_rewriting_enabled: bool = Field(default=True)
     query_rewriting_strategy: str = Field(default="multi_query")
     query_rewriting_num_variants: int = Field(default=3)
-    query_rewriting_temperature: float = Field(default=0.3)
 
     # Re-ranking settings
     reranking_enabled: bool = Field(default=True)
