@@ -1,4 +1,8 @@
+from langchain.retrievers import MultiQueryRetriever
 from langchain_core.documents import Document
+from langchain_core.language_models.fake_chat_models import FakeListChatModel
+from langchain_core.retrievers import BaseRetriever
+from pydantic import Field
 
 from lims_agent.eval.benchmark import (
     EvaluationCase,
@@ -10,6 +14,7 @@ from lims_agent.eval.benchmark import (
 from lims_agent.eval.dataset import build_default_benchmark_cases
 from lims_agent.rag.ingest import chunk_batches
 from lims_agent.rag.loader import enrich_document_metadata, split_document_into_sections
+from lims_agent.rag.query_rewriter import build_query_retriever
 from lims_agent.rag.retriever import summarize_retrieval_results
 from lims_agent.tools.sops import make_get_sop_rules
 
@@ -22,6 +27,27 @@ def test_build_default_benchmark_cases_returns_realistic_sop_questions():
     assert any("ppe" in case.question.lower() for case in cases)
     assert any("temperature" in case.question.lower() for case in cases)
     assert all(case.context for case in cases)
+
+
+def test_query_retriever_uses_multi_query_and_keeps_original(monkeypatch):
+    class RecordingRetriever(BaseRetriever):
+        queries: list[str] = Field(default_factory=list)
+
+        def _get_relevant_documents(self, query: str, *, run_manager=None) -> list[Document]:
+            self.queries.append(query)
+            return [Document(page_content="shared evidence"), Document(page_content=query)]
+
+    base_retriever = RecordingRetriever()
+    fake_llm = FakeListChatModel(responses=["pH range\npH limits"])
+    monkeypatch.setattr("lims_agent.rag.query_rewriter.get_llm", lambda settings: fake_llm)
+
+    retriever = build_query_retriever(base_retriever)
+    results = retriever.invoke("pH injectables")
+
+    assert isinstance(retriever, MultiQueryRetriever)
+    assert "pH injectables" in base_retriever.queries
+    assert len(results) == 4
+    assert [doc.page_content for doc in results].count("shared evidence") == 1
 
 
 def test_evaluate_case_marks_grounded_answer_as_pass():

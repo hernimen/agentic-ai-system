@@ -39,5 +39,4 @@ Original query: {question}"""
         llm=llm,
         prompt=prompt,
         include_original=True,
-        verbose=False,
     )
