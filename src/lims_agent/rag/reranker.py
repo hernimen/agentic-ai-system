@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from abc import ABC, abstractmethod
+from typing import Any
 
 from langchain_core.documents import Document
 
@@ -35,7 +36,7 @@ class CrossEncoderReranker(DocumentReranker):
         self.top_k = top_k
         self._model = None
 
-    def _load_model(self):
+    def _load_model(self) -> Any:
         """Lazy load model to avoid startup cost."""
         if self._model is None:
             try:

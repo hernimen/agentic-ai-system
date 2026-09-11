@@ -1,4 +1,6 @@
 import logging
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from langchain_core.tracers.context import collect_runs
 from langsmith import Client
@@ -17,8 +19,12 @@ class ValidationMiddleware:
             Client() if settings.langsmith_tracing and settings.langsmith_api_key else None
         )
 
-    def wrap_agent(self, agent_graph):
-        async def validated_invoke(input_data: dict, config: dict | None = None) -> dict:
+    def wrap_agent(
+        self, agent_graph: Any
+    ) -> Callable[[dict[str, Any], dict[str, Any] | None], Awaitable[dict[str, Any]]]:
+        async def validated_invoke(
+            input_data: dict[str, Any], config: dict[str, Any] | None = None
+        ) -> dict[str, Any]:
             if self._langsmith_client is None:
                 result = await agent_graph.ainvoke(input_data, config=config)
                 traced_runs = []
@@ -39,7 +45,7 @@ class ValidationMiddleware:
             )
 
             if self._langsmith_client and traced_runs:
-                self._record_validation_feedback(traced_runs[0].id, validation)
+                self._record_validation_feedback(str(traced_runs[0].id), validation)
 
             if not validation["is_valid"]:
                 logger.error("validation.failed violations=%s", validation["violations"])
@@ -60,7 +66,9 @@ class ValidationMiddleware:
 
         return validated_invoke
 
-    def _record_validation_feedback(self, run_id, validation: dict) -> None:
+    def _record_validation_feedback(self, run_id: str, validation: dict[str, Any]) -> None:
+        if self._langsmith_client is None:
+            return
         try:
             self._langsmith_client.create_feedback(
                 run_id=run_id,
@@ -71,8 +79,8 @@ class ValidationMiddleware:
         except Exception:
             logger.warning("langsmith.feedback_failed run_id=%s", run_id, exc_info=True)
 
-    def _extract_tool_outputs(self, messages: list) -> list[str]:
-        tool_outputs = []
+    def _extract_tool_outputs(self, messages: list[Any]) -> list[str]:
+        tool_outputs: list[str] = []
         final_ai_seen = False
         for msg in reversed(messages):
             if hasattr(msg, "type") and msg.type == "tool":
@@ -83,7 +91,7 @@ class ValidationMiddleware:
                 final_ai_seen = True
         return tool_outputs
 
-    def _extract_query(self, input_data: dict) -> str:
+    def _extract_query(self, input_data: dict[str, Any]) -> str:
         messages = input_data.get("messages", [])
         if not messages:
             return ""

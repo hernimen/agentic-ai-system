@@ -1,12 +1,18 @@
 import logging
+import re
+from typing import cast
 
-from langchain.retrievers import EnsembleRetriever
 from langchain_chroma import Chroma
-from langchain_community.retrievers import BM25Retriever
-from langchain_core.callbacks import CallbackManagerForRetrieverRun
+from langchain_classic.retrievers import EnsembleRetriever
+from langchain_core.callbacks import (
+    AsyncCallbackManagerForRetrieverRun,
+    CallbackManagerForRetrieverRun,
+)
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 from langchain_ollama import OllamaEmbeddings
+from pydantic import PrivateAttr
+from rank_bm25 import BM25Okapi
 
 from lims_agent.core.config import Settings, get_settings
 from lims_agent.rag.loader import load_and_split_docs
@@ -14,6 +20,59 @@ from lims_agent.rag.query_rewriter import build_query_retriever
 from lims_agent.rag.reranker import DocumentReranker, build_reranker
 
 logger = logging.getLogger(__name__)
+
+
+class BM25Retriever(BaseRetriever):
+    """Lightweight BM25 retriever backed by rank_bm25 instead of langchain-community."""
+
+    documents: list[Document]
+    k: int = 4
+    _bm25: BM25Okapi = PrivateAttr()
+    _document_tokens: list[list[str]] = PrivateAttr()
+
+    def __init__(self, documents: list[Document], *, k: int = 4):
+        super().__init__(documents=documents, k=k)  # type: ignore[call-arg]
+        self._document_tokens = [self._tokenize(doc.page_content) for doc in documents]
+        self._bm25 = BM25Okapi(self._document_tokens)
+
+    @staticmethod
+    def _tokenize(text: str) -> list[str]:
+        return re.findall(r"\w+", text.lower())
+
+    @classmethod
+    def from_documents(cls, documents: list[Document], *, k: int = 4) -> "BM25Retriever":
+        return cls(documents, k=k)
+
+    def _get_relevant_documents(
+        self, query: str, *, run_manager: CallbackManagerForRetrieverRun | None = None
+    ) -> list[Document]:
+        if not self.documents:
+            return []
+
+        query_tokens = self._tokenize(query)
+        query_token_set = set(query_tokens)
+        scores = self._bm25.get_scores(query_tokens)
+        ranked_indices = sorted(
+            range(len(self.documents)), key=lambda index: scores[index], reverse=True
+        )[: self.k]
+        return [
+            self.documents[index]
+            for index in ranked_indices
+            if query_token_set.intersection(self._document_tokens[index])
+        ]
+
+    async def _aget_relevant_documents(
+        self,
+        query: str,
+        *,
+        run_manager: (
+            AsyncCallbackManagerForRetrieverRun | CallbackManagerForRetrieverRun | None
+        ) = None,
+    ) -> list[Document]:
+        sync_run_manager = cast(CallbackManagerForRetrieverRun | None, run_manager)
+        if isinstance(run_manager, AsyncCallbackManagerForRetrieverRun):
+            sync_run_manager = None
+        return self._get_relevant_documents(query, run_manager=sync_run_manager)
 
 
 def summarize_retrieval_results(docs: list[Document]) -> dict:
@@ -66,10 +125,20 @@ class RerankingRetriever(BaseRetriever):
         """Synchronous retrieval with re-ranking."""
         import asyncio
 
-        return asyncio.run(self._aget_relevant_documents(query, run_manager=run_manager))
+        return asyncio.run(
+            self._aget_relevant_documents(
+                query,
+                run_manager=run_manager if run_manager is not None else None,
+            )
+        )
 
     async def _aget_relevant_documents(
-        self, query: str, *, run_manager: CallbackManagerForRetrieverRun | None = None
+        self,
+        query: str,
+        *,
+        run_manager: (
+            AsyncCallbackManagerForRetrieverRun | CallbackManagerForRetrieverRun | None
+        ) = None,
     ) -> list[Document]:
         """Async retrieval with re-ranking."""
         docs = await self.base_retriever.ainvoke(query)

@@ -2,12 +2,9 @@ import logging
 import re
 from pathlib import Path
 
-from langchain_community.document_loaders import (
-    DirectoryLoader,
-    PyPDFLoader,
-)
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from pypdf import PdfReader
 
 from lims_agent.core.config import Settings, get_settings
 
@@ -98,20 +95,36 @@ def load_and_split_docs(settings: Settings | None = None) -> list[Document]:
             continue
 
         source_files = sorted(source_dir.glob("**/*.pdf"))
-        loaded_docs = DirectoryLoader(
-            str(source_dir),
-            glob="**/*.pdf",
-            loader_cls=PyPDFLoader,
-        ).load()
-
         source_by_name = {source_file.name: source_file for source_file in source_files}
-        for doc in loaded_docs:
-            doc_source = Path(str(doc.metadata.get("source", "")))
-            source_file = source_by_name.get(doc_source.name)
-            if source_file is None:
-                fallback_name = doc_source.name or Path(str(doc.metadata.get("file_path", ""))).name
-                source_file = source_by_name.get(fallback_name)
-            if source_file is None:
+
+        for source_file in source_files:
+            try:
+                reader = PdfReader(str(source_file))
+                for page_index, page in enumerate(reader.pages, start=1):
+                    text = page.extract_text() or ""
+                    if not text.strip():
+                        continue
+                    doc = Document(
+                        page_content=text,
+                        metadata={
+                            "source": str(source_file),
+                            "file_path": str(source_file),
+                            "source_name": source_file.name,
+                            "page": page_index,
+                        },
+                    )
+                    enriched = enrich_document_metadata(doc, source_dir, source_file)
+                    docs.extend(split_document_into_sections(enriched))
+            except Exception:
+                logger.warning("sops.pdf_load_failed path=%s", source_file, exc_info=True)
+
+        for doc in list(docs):
+            source_name = str(doc.metadata.get("source", ""))
+            resolved_source_file: Path | None = source_by_name.get(Path(source_name).name)
+            if resolved_source_file is None:
+                fallback_name = Path(str(doc.metadata.get("file_path", ""))).name
+                resolved_source_file = source_by_name.get(fallback_name)
+            if resolved_source_file is None:
                 logger.warning(
                     "sops.unmatched_document source_dir=%s metadata=%s",
                     source_dir,
@@ -119,8 +132,8 @@ def load_and_split_docs(settings: Settings | None = None) -> list[Document]:
                 )
                 continue
 
-            enriched = enrich_document_metadata(doc, source_dir, source_file)
-            docs.extend(split_document_into_sections(enriched))
+            enriched = enrich_document_metadata(doc, source_dir, resolved_source_file)
+            docs[docs.index(doc)] = enriched
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=settings.chunk_size,

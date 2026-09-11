@@ -1,16 +1,17 @@
 from collections.abc import Awaitable, Callable
+from typing import Any
 
 from fastapi import APIRouter, Depends
 
 from lims_agent.api.deps import get_agent_invoke
-from lims_agent.api.schemas import ChatRequest, ChatResponse
+from lims_agent.api.schemas import ChatRequest, ChatResponse, Citation
 
 router = APIRouter(prefix="/api/v1", tags=["chat"])
 
 
-def _extract_citations(messages: list) -> list[dict]:
-    citations = []
-    seen = set()
+def _extract_citations(messages: list[Any]) -> list[Citation]:
+    citations: list[Citation] = []
+    seen: set[tuple[str, str, str, tuple[int, ...], str]] = set()
 
     for message in messages:
         if getattr(message, "type", None) != "tool":
@@ -20,16 +21,17 @@ def _extract_citations(messages: list) -> list[dict]:
         if artifact is None:
             continue
         for citation in artifact:
+            normalized = Citation.model_validate(citation)
             citation_key = (
-                citation["source_name"],
-                citation["document_id"],
-                citation["section"],
-                tuple(citation["pages"]),
-                citation["excerpt"],
+                normalized.source_name,
+                normalized.document_id,
+                normalized.section,
+                tuple(normalized.pages),
+                normalized.excerpt,
             )
             if citation_key not in seen:
                 seen.add(citation_key)
-                citations.append(citation)
+                citations.append(normalized)
 
     return citations
 

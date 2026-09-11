@@ -5,6 +5,7 @@ from typing import Any
 import httpx
 import truststore
 from langchain_core.language_models import BaseChatModel
+from pydantic import SecretStr
 
 
 class LLMProvider(ABC):
@@ -43,7 +44,7 @@ class GroqProvider(LLMProvider):
         return ChatGroq(
             model=self.model,
             temperature=self.temperature,
-            api_key=self.api_key,
+            api_key=SecretStr(self.api_key) if self.api_key is not None else None,
             http_client=httpx.Client(verify=ssl_context),
             http_async_client=httpx.AsyncClient(verify=ssl_context),
             **self.kwargs,

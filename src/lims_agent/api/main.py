@@ -1,5 +1,6 @@
 import logging
 import os
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -28,7 +29,7 @@ os.environ["LANGSMITH_PROJECT"] = _settings.langsmith_project
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     configure_logging(settings.log_level)
     logger.info("app.startup title=%s version=%s", settings.api_title, settings.api_version)

@@ -1,4 +1,4 @@
-from langchain.retrievers import MultiQueryRetriever
+from langchain_classic.retrievers import MultiQueryRetriever
 from langchain_core.prompts import PromptTemplate
 from langchain_core.retrievers import BaseRetriever
 
@@ -33,7 +33,7 @@ intent but use different vocabulary. Focus on:
 Return only the alternative queries, one per line, without numbering or explanation.
 
 Original query: {question}"""
-    ).partial(variant_count=max(settings.query_rewriting_num_variants - 1, 1))
+    ).partial(variant_count=str(max(settings.query_rewriting_num_variants - 1, 1)))
     return MultiQueryRetriever.from_llm(
         retriever=base_retriever,
         llm=llm,

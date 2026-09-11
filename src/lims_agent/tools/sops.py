@@ -1,6 +1,7 @@
 import logging
 import re
 
+from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.tools import BaseTool, tool
 
@@ -49,10 +50,10 @@ def _document_matches_subject(doc: object, subject_term: str) -> bool:
     return subject_term in _normalize_text(haystack)
 
 
-def _deduplicate_documents(docs: list[object]) -> list[object]:
+def _deduplicate_documents(docs: list[Document]) -> list[Document]:
     """Keep the first copy of each content block while preserving order."""
     seen_content: set[str] = set()
-    unique_docs: list[object] = []
+    unique_docs: list[Document] = []
     for doc in docs:
         page_content = getattr(doc, "page_content", "")
         if page_content in seen_content:

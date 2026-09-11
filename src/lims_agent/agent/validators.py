@@ -198,8 +198,8 @@ class ResponseValidator:
     ) -> dict[str, Any]:
         violations = []
         hallucinated_numbers = []
-        missing_query_terms = []
-        forbidden_phrases = []
+        missing_query_terms: list[str] = []
+        forbidden_phrases: list[str] = []
 
         forbidden = cls.check_forbidden_phrases(response)
         if forbidden:
