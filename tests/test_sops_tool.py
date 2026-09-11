@@ -1,6 +1,6 @@
 from langchain_core.documents import Document
 
-from lims_agent.tools.sops import make_get_sop_rules
+from tools.sops import make_get_sop_rules
 
 
 def test_get_sop_rules_returns_concatenated_docs(stub_retriever):

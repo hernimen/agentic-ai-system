@@ -7,14 +7,14 @@ import uvicorn
 from fastapi import FastAPI
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
-from lims_agent.agent.graph import build_agent_graph
-from lims_agent.api.routes import chat, health
-from lims_agent.core.config import Settings, get_settings
-from lims_agent.core.logging import configure_logging
-from lims_agent.middleware.validation import ValidationMiddleware
-from lims_agent.rag.retriever import build_retriever
-from lims_agent.tools.samples import get_sample_data
-from lims_agent.tools.sops import make_get_sop_rules
+from agent.graph import build_agent_graph
+from api.routes import chat, health
+from core.config import Settings, get_settings
+from core.logging import configure_logging
+from middleware.validation import ValidationMiddleware
+from rag.retriever import build_retriever
+from tools.samples import get_sample_data
+from tools.sops import make_get_sop_rules
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ app = create_app()
 
 def run() -> None:
     uvicorn.run(
-        "lims_agent.api.main:app",
+        "api.main:app",
         host="0.0.0.0",
         port=8000,
         reload=False,

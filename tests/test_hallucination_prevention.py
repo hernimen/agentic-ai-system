@@ -1,5 +1,5 @@
-from lims_agent.agent.prompts import SYSTEM_PROMPT
-from lims_agent.agent.validators import ResponseValidator
+from agent.prompts import SYSTEM_PROMPT
+from agent.validators import ResponseValidator
 
 
 class TestResponseValidator:

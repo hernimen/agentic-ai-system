@@ -1,4 +1,4 @@
-from lims_agent.tools.samples import get_sample_data
+from tools.samples import get_sample_data
 
 
 def test_known_sample():

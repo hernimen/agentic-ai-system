@@ -3,10 +3,10 @@ from collections.abc import Iterator
 
 from langchain_chroma import Chroma
 
-from lims_agent.core.config import get_settings
-from lims_agent.core.logging import configure_logging
-from lims_agent.rag.loader import load_and_split_docs
-from lims_agent.rag.retriever import build_embeddings
+from core.config import get_settings
+from core.logging import configure_logging
+from rag.loader import load_and_split_docs
+from rag.retriever import build_embeddings
 
 logger = logging.getLogger(__name__)
 INGEST_BATCH_SIZE = 32

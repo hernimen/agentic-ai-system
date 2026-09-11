@@ -1,6 +1,6 @@
 from langchain_core.documents import Document
 
-from lims_agent.rag.retriever import BM25Retriever
+from rag.retriever import BM25Retriever
 
 
 def test_bm25_retriever_constructs_and_returns_matching_documents():

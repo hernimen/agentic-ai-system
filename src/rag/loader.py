@@ -6,7 +6,7 @@ from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pypdf import PdfReader
 
-from lims_agent.core.config import Settings, get_settings
+from core.config import Settings, get_settings
 
 logger = logging.getLogger(__name__)
 

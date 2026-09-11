@@ -6,8 +6,8 @@ from fastapi.testclient import TestClient
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 
-from lims_agent.api.deps import get_agent_graph, get_agent_invoke
-from lims_agent.api.main import create_app
+from api.deps import get_agent_graph, get_agent_invoke
+from api.main import create_app
 
 
 class _StubRetriever(BaseRetriever):

@@ -5,7 +5,7 @@ from typing import Any
 
 from langchain_core.documents import Document
 
-from lims_agent.core.config import Settings, get_settings
+from core.config import Settings, get_settings
 
 logger = logging.getLogger(__name__)
 

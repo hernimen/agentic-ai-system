@@ -3,8 +3,8 @@ import sys
 
 from langchain_core.documents import Document
 
-from lims_agent.rag import reranker as reranker_module
-from lims_agent.rag.reranker import CrossEncoderReranker
+from rag import reranker as reranker_module
+from rag.reranker import CrossEncoderReranker
 
 
 def test_reranker_module_imports_without_sentence_transformers():
@@ -22,7 +22,7 @@ class BlockSentenceTransformers(importlib.abc.MetaPathFinder):
 
 sys.meta_path.insert(0, BlockSentenceTransformers())
 sys.modules.pop("sentence_transformers", None)
-import lims_agent.rag.reranker
+import rag.reranker
 """
 
     result = subprocess.run(

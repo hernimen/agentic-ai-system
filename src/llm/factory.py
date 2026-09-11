@@ -2,8 +2,8 @@ import logging
 
 from langchain_core.language_models import BaseChatModel
 
-from lims_agent.core.config import Settings, get_settings
-from lims_agent.llm.providers import GroqProvider
+from core.config import Settings, get_settings
+from llm.providers import GroqProvider
 
 logger = logging.getLogger(__name__)
 

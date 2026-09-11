@@ -2,8 +2,8 @@ from langchain_classic.retrievers import MultiQueryRetriever
 from langchain_core.prompts import PromptTemplate
 from langchain_core.retrievers import BaseRetriever
 
-from lims_agent.core.config import Settings, get_settings
-from lims_agent.llm import get_llm
+from core.config import Settings, get_settings
+from llm import get_llm
 
 
 def build_query_retriever(

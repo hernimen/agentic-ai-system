@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from lims_agent.eval.benchmark import EvaluationCase
+from eval.benchmark import EvaluationCase
 
 
 def build_default_benchmark_cases() -> list[EvaluationCase]:

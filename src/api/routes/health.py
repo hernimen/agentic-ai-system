@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from langchain_chroma import Chroma
 
-from lims_agent.core.config import get_settings
+from core.config import get_settings
 
 router = APIRouter(tags=["health"])
 

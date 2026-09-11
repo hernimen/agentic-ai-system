@@ -53,11 +53,11 @@ groq = [
 ]
 
 [project.scripts]
-lims-ingest = "lims_agent.rag.ingest:main"
-lims-serve = "lims_agent.api.main:run"
+lims-ingest = "rag.ingest:main"
+lims-serve = "api.main:run"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/lims_agent"]
+packages = ["src/agent", "src/api", "src/core", "src/eval", "src/llm", "src/middleware", "src/rag", "src/tools"]
 
 [tool.ruff]
 line-length = 100
@@ -73,7 +73,7 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path"]
 python_version = "3.12"
 strict_optional = true
 disallow_untyped_defs = true
-files = ["src/lims_agent"]
+files = ["src"]
 
 [[tool.mypy.overrides]]
 module = ["langchain.*", "langchain_community.*", "langchain_chroma.*", "langchain_ollama.*", "langgraph.*", "rank_bm25.*"]

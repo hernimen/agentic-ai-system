@@ -14,10 +14,10 @@ from langchain_ollama import OllamaEmbeddings
 from pydantic import PrivateAttr
 from rank_bm25 import BM25Okapi
 
-from lims_agent.core.config import Settings, get_settings
-from lims_agent.rag.loader import load_and_split_docs
-from lims_agent.rag.query_rewriter import build_query_retriever
-from lims_agent.rag.reranker import DocumentReranker, build_reranker
+from core.config import Settings, get_settings
+from rag.loader import load_and_split_docs
+from rag.query_rewriter import build_query_retriever
+from rag.reranker import DocumentReranker, build_reranker
 
 logger = logging.getLogger(__name__)
 

@@ -6,9 +6,9 @@ from langgraph.graph import START, MessagesState, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
 
-from lims_agent.agent.prompts import SYSTEM_PROMPT
-from lims_agent.core.config import Settings, get_settings
-from lims_agent.llm import get_llm
+from agent.prompts import SYSTEM_PROMPT
+from core.config import Settings, get_settings
+from llm import get_llm
 
 
 def build_agent_graph(

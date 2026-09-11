@@ -5,8 +5,8 @@ from typing import Any
 from langchain_core.tracers.context import collect_runs
 from langsmith import Client
 
-from lims_agent.agent.validators import ResponseValidator
-from lims_agent.core.config import Settings
+from agent.validators import ResponseValidator
+from core.config import Settings
 
 logger = logging.getLogger(__name__)
 

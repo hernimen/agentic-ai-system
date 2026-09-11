@@ -21,16 +21,16 @@ install:
 	uv sync --group groq
 
 ingest:
-	uv run python -m lims_agent.rag.ingest
+	uv run python -m rag.ingest
 
 dev:
-	uv run uvicorn lims_agent.api.main:app --reload --host 0.0.0.0 --port $(PORT)
+	uv run uvicorn api.main:app --reload --host 0.0.0.0 --port $(PORT)
 
 test:
 	uv run pytest
 
 benchmark:
-	uv run python -c "from lims_agent.eval.dataset import build_default_benchmark_cases; from lims_agent.eval.benchmark import check_benchmark_thresholds; check_benchmark_thresholds(build_default_benchmark_cases(), min_pass_rate=0.8, min_grounded_rate=0.8, min_retrieval_hit_rate=0.8)"
+	uv run python -c "from eval.dataset import build_default_benchmark_cases; from eval.benchmark import check_benchmark_thresholds; check_benchmark_thresholds(build_default_benchmark_cases(), min_pass_rate=0.8, min_grounded_rate=0.8, min_retrieval_hit_rate=0.8)"
 
 lint:
 	uv run ruff check src tests

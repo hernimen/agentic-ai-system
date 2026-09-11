@@ -6,8 +6,8 @@ from langchain_core.runnables import RunnableLambda
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import START, MessagesState, StateGraph
 
-from lims_agent.core.config import Settings
-from lims_agent.middleware.validation import ValidationMiddleware
+from core.config import Settings
+from middleware.validation import ValidationMiddleware
 
 
 def _settings(**overrides) -> Settings:
@@ -82,7 +82,7 @@ async def test_validated_invoke_works_without_langsmith_tracing():
 @pytest.mark.asyncio
 async def test_validated_invoke_records_feedback_when_tracing_enabled(monkeypatch):
     fake_client = MagicMock()
-    monkeypatch.setattr("lims_agent.middleware.validation.Client", lambda *a, **kw: fake_client)
+    monkeypatch.setattr("middleware.validation.Client", lambda *a, **kw: fake_client)
 
     middleware = ValidationMiddleware(_settings(langsmith_tracing=True))
     invoke = middleware.wrap_agent(_StubGraph("The pH range is 7.0-7.4"))
@@ -99,7 +99,7 @@ async def test_validated_invoke_records_feedback_when_tracing_enabled(monkeypatc
 async def test_validated_invoke_survives_langsmith_failure(monkeypatch):
     fake_client = MagicMock()
     fake_client.create_feedback.side_effect = RuntimeError("network down")
-    monkeypatch.setattr("lims_agent.middleware.validation.Client", lambda *a, **kw: fake_client)
+    monkeypatch.setattr("middleware.validation.Client", lambda *a, **kw: fake_client)
 
     middleware = ValidationMiddleware(_settings(langsmith_tracing=True))
     invoke = middleware.wrap_agent(_StubGraph("The pH range is 7.0-7.4"))

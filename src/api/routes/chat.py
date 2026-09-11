@@ -3,8 +3,8 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
-from lims_agent.api.deps import get_agent_invoke
-from lims_agent.api.schemas import ChatRequest, ChatResponse, Citation
+from api.deps import get_agent_invoke
+from api.schemas import ChatRequest, ChatResponse, Citation
 
 router = APIRouter(prefix="/api/v1", tags=["chat"])
 

@@ -2,11 +2,11 @@ import os
 
 from langchain_core.messages import AIMessage, ToolMessage
 
-from lims_agent.api.deps import get_agent_invoke
-from lims_agent.api.main import configure_langsmith
-from lims_agent.api.routes.chat import _extract_citations
-from lims_agent.api.schemas import Citation
-from lims_agent.core.config import Settings
+from api.deps import get_agent_invoke
+from api.main import configure_langsmith
+from api.routes.chat import _extract_citations
+from api.schemas import Citation
+from core.config import Settings
 
 
 def test_configure_langsmith_sets_environment(monkeypatch):
@@ -126,8 +126,8 @@ def test_health_route_reports_liveness(client):
 
 
 def test_health_ready_route_reports_dependency_status(client, monkeypatch):
-    monkeypatch.setattr("lims_agent.api.routes.health._check_chroma_ready", lambda: True)
-    monkeypatch.setattr("lims_agent.api.routes.health._check_ollama_ready", lambda: True)
+    monkeypatch.setattr("api.routes.health._check_chroma_ready", lambda: True)
+    monkeypatch.setattr("api.routes.health._check_ollama_ready", lambda: True)
 
     response = client.get("/health/ready")
 
@@ -139,12 +139,12 @@ def test_health_ready_route_reports_dependency_status(client, monkeypatch):
 
 
 def test_health_ready_route_returns_503_when_dependency_fails(client, monkeypatch):
-    monkeypatch.setattr("lims_agent.api.routes.health._check_chroma_ready", lambda: True)
+    monkeypatch.setattr("api.routes.health._check_chroma_ready", lambda: True)
 
     def fail_ollama() -> bool:
         raise RuntimeError("ollama unavailable")
 
-    monkeypatch.setattr("lims_agent.api.routes.health._check_ollama_ready", fail_ollama)
+    monkeypatch.setattr("api.routes.health._check_ollama_ready", fail_ollama)
 
     response = client.get("/health/ready")
 
