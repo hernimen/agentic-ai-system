@@ -1,8 +1,36 @@
+import os
+
 from langchain_core.messages import AIMessage, ToolMessage
 
 from lims_agent.api.deps import get_agent_invoke
+from lims_agent.api.main import configure_langsmith
 from lims_agent.api.routes.chat import _extract_citations
 from lims_agent.api.schemas import Citation
+from lims_agent.core.config import Settings
+
+
+def test_configure_langsmith_sets_environment(monkeypatch):
+    for variable in (
+        "LANGSMITH_TRACING",
+        "LANGSMITH_ENDPOINT",
+        "LANGSMITH_API_KEY",
+        "LANGSMITH_PROJECT",
+    ):
+        monkeypatch.setenv(variable, "original")
+
+    settings = Settings(
+        langsmith_tracing=True,
+        langsmith_api_key="test-key",
+        langsmith_endpoint="https://example.test",
+        langsmith_project="test-project",
+    )
+
+    configure_langsmith(settings)
+
+    assert os.environ["LANGSMITH_TRACING"] == "true"
+    assert os.environ["LANGSMITH_ENDPOINT"] == "https://example.test"
+    assert os.environ["LANGSMITH_API_KEY"] == "test-key"
+    assert os.environ["LANGSMITH_PROJECT"] == "test-project"
 
 
 def test_chat_completions_smoke(client):

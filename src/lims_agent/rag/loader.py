@@ -95,7 +95,6 @@ def load_and_split_docs(settings: Settings | None = None) -> list[Document]:
             continue
 
         source_files = sorted(source_dir.glob("**/*.pdf"))
-        source_by_name = {source_file.name: source_file for source_file in source_files}
 
         for source_file in source_files:
             try:
@@ -117,23 +116,6 @@ def load_and_split_docs(settings: Settings | None = None) -> list[Document]:
                     docs.extend(split_document_into_sections(enriched))
             except Exception:
                 logger.warning("sops.pdf_load_failed path=%s", source_file, exc_info=True)
-
-        for doc in list(docs):
-            source_name = str(doc.metadata.get("source", ""))
-            resolved_source_file: Path | None = source_by_name.get(Path(source_name).name)
-            if resolved_source_file is None:
-                fallback_name = Path(str(doc.metadata.get("file_path", ""))).name
-                resolved_source_file = source_by_name.get(fallback_name)
-            if resolved_source_file is None:
-                logger.warning(
-                    "sops.unmatched_document source_dir=%s metadata=%s",
-                    source_dir,
-                    doc.metadata,
-                )
-                continue
-
-            enriched = enrich_document_metadata(doc, source_dir, resolved_source_file)
-            docs[docs.index(doc)] = enriched
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=settings.chunk_size,

@@ -9,7 +9,7 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from lims_agent.agent.graph import build_agent_graph
 from lims_agent.api.routes import chat, health
-from lims_agent.core.config import get_settings
+from lims_agent.core.config import Settings, get_settings
 from lims_agent.core.logging import configure_logging
 from lims_agent.middleware.validation import ValidationMiddleware
 from lims_agent.rag.retriever import build_retriever
@@ -18,20 +18,22 @@ from lims_agent.tools.sops import make_get_sop_rules
 
 logger = logging.getLogger(__name__)
 
-_settings = get_settings()
-_tracing_enabled = _settings.langsmith_tracing and bool(_settings.langsmith_api_key)
-if _settings.langsmith_tracing and not _tracing_enabled:
-    logger.warning("langsmith.tracing_disabled reason=missing_api_key")
-os.environ["LANGSMITH_TRACING"] = str(_tracing_enabled).lower()
-os.environ["LANGSMITH_ENDPOINT"] = _settings.langsmith_endpoint
-os.environ["LANGSMITH_API_KEY"] = _settings.langsmith_api_key
-os.environ["LANGSMITH_PROJECT"] = _settings.langsmith_project
+
+def configure_langsmith(settings: Settings) -> None:
+    tracing_enabled = settings.langsmith_tracing and bool(settings.langsmith_api_key)
+    if settings.langsmith_tracing and not tracing_enabled:
+        logger.warning("langsmith.tracing_disabled reason=missing_api_key")
+    os.environ["LANGSMITH_TRACING"] = str(tracing_enabled).lower()
+    os.environ["LANGSMITH_ENDPOINT"] = settings.langsmith_endpoint
+    os.environ["LANGSMITH_API_KEY"] = settings.langsmith_api_key
+    os.environ["LANGSMITH_PROJECT"] = settings.langsmith_project
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     configure_logging(settings.log_level)
+    configure_langsmith(settings)
     logger.info("app.startup title=%s version=%s", settings.api_title, settings.api_version)
 
     database_url = settings.database_url
