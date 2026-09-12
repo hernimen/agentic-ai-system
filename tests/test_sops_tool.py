@@ -1,6 +1,6 @@
 from langchain_core.documents import Document
 
-from tools.sops import make_get_sop_rules
+from tools.sops import _document_matches_identifier, _document_matches_subject, make_get_sop_rules
 
 
 def test_get_sop_rules_returns_concatenated_docs(stub_retriever):
@@ -65,3 +65,21 @@ def test_get_sop_rules_prioritizes_explicit_sop_identifier(stub_retriever):
 
     assert "sop-02.pdf" in content
     assert "sop-07.pdf" not in content
+
+
+def test_sop_identifier_formats_match_same_document():
+    doc = Document(page_content="Storage requirements.", metadata={"document_id": "sop-02"})
+
+    assert _document_matches_identifier(doc, "sop-2")
+
+
+def test_sop_identifier_does_not_match_longer_identifier():
+    doc = Document(page_content="Storage requirements.", metadata={"document_id": "sop-020"})
+
+    assert not _document_matches_identifier(doc, "sop-02")
+
+
+def test_subject_matching_uses_complete_tokens():
+    doc = Document(page_content="Laboratory safety requirements.")
+
+    assert not _document_matches_subject(doc, "lab")
